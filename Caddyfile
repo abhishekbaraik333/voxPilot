@@ -2,7 +2,7 @@
 # Exposes the frontend on port 80/443 and routes backend requests internally.
 
 # If you have a domain, replace :80 with your domain (e.g. voxpilot.yourdomain.com)
-:80 {
+voxpiloto.xyz, www.voxpiloto.xyz {
 
     # Route backend endpoints to Fastify backend
     reverse_proxy /api/* server:3001

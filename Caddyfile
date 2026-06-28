@@ -3,12 +3,6 @@
 
 # If you have a domain, replace :80 with your domain (e.g. voxpilot.yourdomain.com)
 :80 {
-    # Route all WebSocket connections to Fastify backend
-    @websockets {
-        header Connection *Upgrade*
-        header Upgrade    websocket
-    }
-    reverse_proxy @websockets server:3001
 
     # Route backend endpoints to Fastify backend
     reverse_proxy /api/* server:3001
@@ -22,3 +16,4 @@
         output file /var/log/caddy/access.log
     }
 }
+

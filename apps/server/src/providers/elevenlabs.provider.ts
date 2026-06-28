@@ -54,6 +54,13 @@ export function createElevenLabsStream(voiceId?: string): {
       try {
         const msg = JSON.parse(data.toString());
 
+        // Log and emit error if ElevenLabs returns an error message frame
+        if (msg.error || msg.message) {
+          logger.error({ msg }, 'ElevenLabs WS error payload received');
+          events.emit('error', new Error(msg.message || msg.error));
+          return;
+        }
+
         if (msg.audio) {
           // Base64 encoded audio chunk
           const audioBuffer = Buffer.from(msg.audio, 'base64');

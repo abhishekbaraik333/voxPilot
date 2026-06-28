@@ -22,6 +22,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Connect WebSocket when authenticated
   useWebSocket();
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (mounted && !isAuthenticated && pathname !== '/login') {
+      router.push('/login');
+    }
+  }, [mounted, isAuthenticated, pathname, router]);
+
   // Don't render during SSR
   if (!mounted) {
     return (
@@ -35,13 +42,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   if (pathname === '/login') {
     return <>{children}</>;
   }
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (mounted && !isAuthenticated && pathname !== '/login') {
-      router.push('/login');
-    }
-  }, [mounted, isAuthenticated, pathname, router]);
 
   // Show loading spinner if redirecting or mounting
   if (!mounted || (!isAuthenticated && pathname !== '/login')) {

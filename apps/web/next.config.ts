@@ -6,7 +6,14 @@ const getDevOrigins = () => {
   if (webhookUrl) {
     try {
       const hostname = new URL(webhookUrl).hostname;
-      if (hostname) origins.push(hostname);
+      if (hostname) {
+        origins.push(hostname);
+        if (hostname.startsWith('www.')) {
+          origins.push(hostname.substring(4));
+        } else {
+          origins.push(`www.${hostname}`);
+        }
+      }
     } catch {
       // Ignore
     }

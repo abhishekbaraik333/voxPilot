@@ -1,0 +1,48 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    expose:
+      - "3001"
+    env_file: .env
+    restart: unless-stopped
+    networks:
+      - voxpilot
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    expose:
+      - "3000"
+    env_file: .env
+    depends_on:
+      - server
+    restart: unless-stopped
+    networks:
+      - voxpilot
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - server
+      - web
+    restart: unless-stopped
+    networks:
+      - voxpilot
+
+volumes:
+  caddy-data:
+  caddy-config:
+
+networks:
+  voxpilot:
+    driver: bridge

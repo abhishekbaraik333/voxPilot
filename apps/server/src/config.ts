@@ -45,9 +45,8 @@ export const config = {
   elevenlabsModelId: optionalEnv('ELEVENLABS_MODEL_ID', 'eleven_turbo_v2_5'),
 
   // LLM
-  openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
+  openrouterApiKey: requireEnv('OPENROUTER_API_KEY'),
   openrouterBaseUrl: optionalEnv('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
-  openaiApiKey: process.env.OPENAI_API_KEY || '',
   defaultLlmModel: optionalEnv('DEFAULT_LLM_MODEL', 'inclusionai/ling-2.6-flash'),
 
   // Dashboard
@@ -56,16 +55,14 @@ export const config = {
   // Logging
   logLevel: optionalEnv('LOG_LEVEL', 'debug'),
 
-  /** Returns the LLM base URL — prefers OpenRouter if key is set */
+  /** Returns the LLM base URL */
   get llmBaseUrl(): string {
-    if (this.openrouterApiKey) return this.openrouterBaseUrl;
-    return 'https://api.openai.com/v1';
+    return this.openrouterBaseUrl;
   },
 
-  /** Returns the LLM API key — prefers OpenRouter if key is set */
+  /** Returns the LLM API key */
   get llmApiKey(): string {
-    if (this.openrouterApiKey) return this.openrouterApiKey;
-    return this.openaiApiKey;
+    return this.openrouterApiKey;
   },
 
   get isDev(): boolean {

@@ -1,3 +1,4 @@
+
 import dotenv from 'dotenv';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -61,30 +62,28 @@ async function testDeepgram() {
 }
 
 async function testLLM() {
-  console.log('Testing LLM (OpenRouter/OpenAI)...');
+  console.log('Testing LLM (OpenRouter)...');
   const orKey = process.env.OPENROUTER_API_KEY;
-  const oaKey = process.env.OPENAI_API_KEY;
   const model = process.env.DEFAULT_LLM_MODEL || 'inclusionai/ling-2.6-flash';
 
-  const apiKey = orKey || oaKey;
-  const baseURL = orKey ? (process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1') : 'https://api.openai.com/v1';
+  const baseURL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 
-  if (!apiKey) {
-    console.log(red('✖ LLM: No API keys configured (OpenRouter or OpenAI)\n'));
+  if (!orKey) {
+    console.log(red('✖ LLM: OpenRouter API key missing in .env\n'));
     return false;
   }
 
-  console.log(blue(`  Using ${orKey ? 'OpenRouter' : 'OpenAI'} baseURL: ${baseURL}`));
+  console.log(blue(`  Using OpenRouter baseURL: ${baseURL}`));
   console.log(blue(`  Selected Model: ${model}`));
 
   try {
     const openai = new OpenAI({
       baseURL,
-      apiKey,
-      defaultHeaders: orKey ? {
+      apiKey: orKey,
+      defaultHeaders: {
         'HTTP-Referer': 'https://voxpilot.app',
         'X-Title': 'VoxPilot Diagnostics',
-      } : undefined
+      }
     });
 
     const completion = await openai.chat.completions.create({

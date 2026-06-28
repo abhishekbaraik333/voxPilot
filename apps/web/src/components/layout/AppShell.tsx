@@ -37,8 +37,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   // Redirect to login if not authenticated
-  if (!isAuthenticated) {
-    router.push('/login');
+  useEffect(() => {
+    if (mounted && !isAuthenticated && pathname !== '/login') {
+      router.push('/login');
+    }
+  }, [mounted, isAuthenticated, pathname, router]);
+
+  // Show loading spinner if redirecting or mounting
+  if (!mounted || (!isAuthenticated && pathname !== '/login')) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />

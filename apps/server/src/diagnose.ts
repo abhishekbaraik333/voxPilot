@@ -2,7 +2,6 @@
 import dotenv from 'dotenv';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import twilio from 'twilio';
 import { createClient } from '@deepgram/sdk';
 import OpenAI from 'openai';
 
@@ -16,25 +15,35 @@ const blue = (text: string) => `\x1b[34m${text}\x1b[0m`;
 
 console.log(blue('\n=== VoxPilot System Diagnostics ===\n'));
 
-async function testTwilio() {
-  console.log('Testing Twilio Connection...');
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const phone = process.env.TWILIO_PHONE_NUMBER;
+async function testTelnyx() {
+  console.log('Testing Telnyx Connection...');
+  const apiKey = process.env.TELNYX_API_KEY;
+  const connectionId = process.env.TELNYX_CONNECTION_ID;
+  const phone = process.env.TELNYX_PHONE_NUMBER;
 
-  if (!sid || !token || !phone) {
-    console.log(red('✖ Twilio: Configuration missing in .env\n'));
+  if (!apiKey || !connectionId || !phone) {
+    console.log(red('✖ Telnyx: Configuration missing in .env\n'));
     return false;
   }
 
   try {
-    const client = twilio(sid, token);
-    const account = await client.api.v2010.accounts(sid).fetch();
-    console.log(green(`✔ Twilio: Connected. Account Name: "${account.friendlyName}", Status: ${account.status}`));
-    console.log(green(`  Twilio Number: ${phone}\n`));
+    const response = await fetch('https://api.telnyx.com/v2/balance', {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} - ${await response.text()}`);
+    }
+
+    const data = await response.json() as any;
+    console.log(green(`✔ Telnyx: Connected. Balance: ${data.data.balance} ${data.data.currency}`));
+    console.log(green(`  Telnyx Connection ID: ${connectionId}`));
+    console.log(green(`  Telnyx Number: ${phone}\n`));
     return true;
   } catch (err: any) {
-    console.log(red(`✖ Twilio Failed: ${err.message}\n`));
+    console.log(red(`✖ Telnyx Failed: ${err.message}\n`));
     return false;
   }
 }
@@ -137,19 +146,19 @@ async function testElevenLabs() {
 }
 
 async function runAll() {
-  const twilioOk = await testTwilio();
+  const telnyxOk = await testTelnyx();
   const dgOk = await testDeepgram();
   const llmOk = await testLLM();
   const elOk = await testElevenLabs();
 
   console.log(blue('=== Diagnostic Summary ==='));
-  console.log(`Twilio:      ${twilioOk ? green('PASSED') : red('FAILED')}`);
+  console.log(`Telnyx:      ${telnyxOk ? green('PASSED') : red('FAILED')}`);
   console.log(`Deepgram:    ${dgOk ? green('PASSED') : red('FAILED')}`);
   console.log(`LLM Provider: ${llmOk ? green('PASSED') : red('FAILED')}`);
   console.log(`ElevenLabs:  ${elOk ? green('PASSED') : red('FAILED')}`);
   console.log();
 
-  if (twilioOk && dgOk && llmOk && elOk) {
+  if (telnyxOk && dgOk && llmOk && elOk) {
     console.log(green('🚀 All systems are GO! You are ready to start placing outbound calls.'));
   } else {
     console.log(yellow('⚠ Some systems failed. Please review your credentials in the .env file.'));

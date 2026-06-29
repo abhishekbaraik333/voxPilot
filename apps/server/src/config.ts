@@ -30,10 +30,10 @@ export const config = {
   adminEmail: optionalEnv('ADMIN_EMAIL', 'admin@voxpilot.local'),
   adminPassword: optionalEnv('ADMIN_PASSWORD', 'changeme123'),
 
-  // Twilio
-  twilioAccountSid: requireEnv('TWILIO_ACCOUNT_SID'),
-  twilioAuthToken: requireEnv('TWILIO_AUTH_TOKEN'),
-  twilioPhoneNumber: requireEnv('TWILIO_PHONE_NUMBER'),
+  // Telnyx Telephony
+  telnyxApiKey: requireEnv('TELNYX_API_KEY'),
+  telnyxConnectionId: requireEnv('TELNYX_CONNECTION_ID'),
+  telnyxPhoneNumber: requireEnv('TELNYX_PHONE_NUMBER'),
   twilioWebhookBaseUrl: optionalEnv('TWILIO_WEBHOOK_BASE_URL', 'http://localhost:3001'),
 
   // Deepgram

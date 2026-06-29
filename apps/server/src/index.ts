@@ -64,9 +64,9 @@ async function main() {
   app.get('/api/settings/status', async () => {
     const providers = [
       {
-        name: 'Twilio',
-        status: config.twilioAccountSid ? 'connected' : 'unconfigured',
-        details: config.twilioPhoneNumber,
+        name: 'Telnyx',
+        status: config.telnyxApiKey ? 'connected' : 'unconfigured',
+        details: config.telnyxPhoneNumber,
       },
       {
         name: 'Deepgram',

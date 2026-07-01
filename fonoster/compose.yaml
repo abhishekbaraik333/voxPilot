@@ -3,7 +3,7 @@ services:
     image: fonoster/dashboard:0.17.1
     restart: unless-stopped
     expose:
-      - 3030:3030
+      - "3030"
     environment:
       - SERVER_DASHBOARD_SESSION_SECRET
 

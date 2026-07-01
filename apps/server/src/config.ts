@@ -30,11 +30,16 @@ export const config = {
   adminEmail: optionalEnv('ADMIN_EMAIL', 'admin@voxpilot.local'),
   adminPassword: optionalEnv('ADMIN_PASSWORD', 'changeme123'),
 
-  // Telnyx Telephony
-  telnyxApiKey: requireEnv('TELNYX_API_KEY'),
-  telnyxConnectionId: requireEnv('TELNYX_CONNECTION_ID'),
-  telnyxPhoneNumber: requireEnv('TELNYX_PHONE_NUMBER'),
-  twilioWebhookBaseUrl: optionalEnv('TWILIO_WEBHOOK_BASE_URL', 'http://localhost:3001'),
+  // Fonoster
+  fonosterEndpoint: optionalEnv('FONOSTER_API_ENDPOINT', 'localhost:50051'),
+  fonosterVoicePort: parseInt(optionalEnv('FONOSTER_VOICE_PORT', '3002'), 10),
+  fonosterAccessKeyId: requireEnv('FONOSTER_ACCESS_KEY_ID'),
+  fonosterApiKey: requireEnv('FONOSTER_API_KEY'),
+  fonosterApiSecret: requireEnv('FONOSTER_API_SECRET'),
+  fonosterAppRef: requireEnv('FONOSTER_APP_REF'),
+
+  // Cellhub
+  cellhubCallerId: requireEnv('CELLHUB_CALLER_ID'),
 
   // Deepgram
   deepgramApiKey: requireEnv('DEEPGRAM_API_KEY'),

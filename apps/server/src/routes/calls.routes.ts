@@ -4,7 +4,7 @@ import { config } from '../config.js';
 import { toE164 } from '../lib/utils.js';
 import { logger } from '../lib/logger.js';
 import * as store from '../services/call-store.js';
-import { initiateOutboundCall, endCall } from '../providers/telnyx.provider.js';
+import { initiateOutboundCall } from '../providers/fonoster.provider.js';
 import { broadcastCallStatus } from '../ws/dashboard-ws.js';
 
 export async function callRoutes(app: FastifyInstance) {
@@ -41,7 +41,7 @@ export async function callRoutes(app: FastifyInstance) {
     // Create call record in memory
     const call = store.createCallRecord({
       toNumber: formattedNumber,
-      fromNumber: config.telnyxPhoneNumber,
+      fromNumber: config.cellhubCallerId,
       prompt,
       voiceId: voiceId || config.elevenlabsVoiceId,
       llmModel: llmModel || config.defaultLlmModel,
@@ -116,9 +116,11 @@ export async function callRoutes(app: FastifyInstance) {
     }
 
     try {
-      // End via Telnyx
-      if (call.twilioCallSid) {
-        await endCall(call.twilioCallSid);
+      // End via Fonoster session
+      const { getSession } = await import('../services/call-orchestrator.js');
+      const session = getSession(id);
+      if (session) {
+        await session.hangup();
       }
 
       store.updateCallStatus(id, 'completed', {

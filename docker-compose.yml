@@ -5,6 +5,7 @@ services:
       dockerfile: apps/server/Dockerfile
     expose:
       - "3001"
+      - "3002"
     env_file: .env
     restart: unless-stopped
     networks:
@@ -47,4 +48,5 @@ volumes:
 
 networks:
   voxpilot:
+    name: voxpilot
     driver: bridge

@@ -30,8 +30,11 @@ export class CallSession extends EventEmitter {
   private isProcessing = false;
   private callStartTime: number;
 
-  // Twilio WebSocket reference (set externally)
-  private twilioWsSend: ((data: string) => void) | null = null;
+  // Fonoster stream references
+  private fonosterStream: any = null;
+  private mediaSessionRef = '';
+  private streamRef = '';
+  private streamFormat = '';
 
   constructor(callId: string, streamSid: string) {
     super();
@@ -52,9 +55,34 @@ export class CallSession extends EventEmitter {
     logger.info({ callId, streamSid }, 'CallSession created');
   }
 
-  /** Set the function to send audio back to Twilio */
-  setTwilioSender(sendFn: (data: string) => void) {
-    this.twilioWsSend = sendFn;
+  private hangupFn: (() => Promise<any> | void) | null = null;
+
+  /** Set the Fonoster stream */
+  setFonosterStream(stream: any) {
+    this.fonosterStream = stream;
+  }
+
+  /** Set the Fonoster hangup handler */
+  setHangupHandler(hangupFn: () => Promise<any> | void) {
+    this.hangupFn = hangupFn;
+  }
+
+  /** Trigger hangup */
+  async hangup() {
+    if (this.hangupFn) {
+      try {
+        await this.hangupFn();
+      } catch (err) {
+        logger.error({ err, callId: this.callId }, 'Error triggering Fonoster hangup');
+      }
+    }
+  }
+
+  /** Update stream details received from payload */
+  setStreamInfo(mediaSessionRef: string, streamRef: string, format: string) {
+    this.mediaSessionRef = mediaSessionRef;
+    this.streamRef = streamRef;
+    this.streamFormat = format;
   }
 
   /** Start the STT and TTS streams */
@@ -78,7 +106,7 @@ export class CallSession extends EventEmitter {
     this.tts = createElevenLabsStream(this.voiceId);
 
     this.tts.events.on('audio', (audioBuffer: Buffer) => {
-      this.sendAudioToTwilio(audioBuffer);
+      this.sendAudioToFonoster(audioBuffer);
     });
 
     this.tts.events.on('done', () => {
@@ -100,11 +128,10 @@ export class CallSession extends EventEmitter {
     logger.info({ callId: this.callId }, 'CallSession started — pipeline active');
   }
 
-  /** Handle incoming audio from Twilio (mulaw 8kHz, base64) */
-  handleTwilioAudio(audioPayload: string) {
+  /** Handle incoming audio from Fonoster (raw Uint8Array) */
+  handleFonosterAudio(data: Uint8Array) {
     if (!this.deepgram) return;
-    const audioBuffer = Buffer.from(audioPayload, 'base64');
-    this.deepgram.send(audioBuffer);
+    this.deepgram.send(Buffer.from(data));
   }
 
   /** Handle transcript from Deepgram */
@@ -233,20 +260,14 @@ export class CallSession extends EventEmitter {
   private handleInterruption() {
     logger.debug({ callId: this.callId }, 'User interrupted agent');
 
-    // Clear Twilio playback buffer
-    if (this.twilioWsSend) {
-      this.twilioWsSend(JSON.stringify({
-        event: 'clear',
-        streamSid: this.streamSid,
-      }));
-    }
+    // Stopping stream write ceases playback instantly, no buffer clearing needed for Fonoster
 
     // Close and recreate TTS stream
     this.tts?.close();
     this.tts = createElevenLabsStream(this.voiceId);
 
     this.tts.events.on('audio', (audioBuffer: Buffer) => {
-      this.sendAudioToTwilio(audioBuffer);
+      this.sendAudioToFonoster(audioBuffer);
     });
 
     this.tts.events.on('done', () => {
@@ -268,19 +289,21 @@ export class CallSession extends EventEmitter {
     });
   }
 
-  /** Send audio back to Twilio */
-  private sendAudioToTwilio(audioBuffer: Buffer) {
-    if (!this.twilioWsSend) return;
+  /** Send audio back to Fonoster */
+  private sendAudioToFonoster(audioBuffer: Buffer) {
+    if (!this.fonosterStream || !this.mediaSessionRef || !this.streamRef) return;
 
-    const payload = JSON.stringify({
-      event: 'media',
-      streamSid: this.streamSid,
-      media: {
-        payload: audioBuffer.toString('base64'),
-      },
-    });
-
-    this.twilioWsSend(payload);
+    try {
+      this.fonosterStream.write({
+        mediaSessionRef: this.mediaSessionRef,
+        streamRef: this.streamRef,
+        format: this.streamFormat || 'WAV',
+        type: 'AUDIO_OUT' as any,
+        data: new Uint8Array(audioBuffer),
+      });
+    } catch (err) {
+      logger.error({ err, callId: this.callId }, 'Error sending audio to Fonoster stream');
+    }
   }
 
   /** Get elapsed time since call start in ms */
@@ -295,7 +318,8 @@ export class CallSession extends EventEmitter {
     this.tts?.close();
     this.deepgram = null;
     this.tts = null;
-    this.twilioWsSend = null;
+    this.fonosterStream = null;
+    this.hangupFn = null;
     this.removeAllListeners();
   }
 }

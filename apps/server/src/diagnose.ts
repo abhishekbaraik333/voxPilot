@@ -2,6 +2,7 @@
 import dotenv from 'dotenv';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import SDK from '@fonoster/sdk';
 import { createClient } from '@deepgram/sdk';
 import OpenAI from 'openai';
 
@@ -15,35 +16,28 @@ const blue = (text: string) => `\x1b[34m${text}\x1b[0m`;
 
 console.log(blue('\n=== VoxPilot System Diagnostics ===\n'));
 
-async function testTelnyx() {
-  console.log('Testing Telnyx Connection...');
-  const apiKey = process.env.TELNYX_API_KEY;
-  const connectionId = process.env.TELNYX_CONNECTION_ID;
-  const phone = process.env.TELNYX_PHONE_NUMBER;
+async function testFonoster() {
+  console.log('Testing Fonoster Connection...');
+  const endpoint = process.env.FONOSTER_API_ENDPOINT || 'localhost:50051';
+  const accessKeyId = process.env.FONOSTER_ACCESS_KEY_ID;
+  const apiKey = process.env.FONOSTER_API_KEY;
+  const apiSecret = process.env.FONOSTER_API_SECRET;
 
-  if (!apiKey || !connectionId || !phone) {
-    console.log(red('✖ Telnyx: Configuration missing in .env\n'));
+  if (!accessKeyId || !apiKey || !apiSecret) {
+    console.log(red('✖ Fonoster: Configuration missing in .env\n'));
     return false;
   }
 
   try {
-    const response = await fetch('https://api.telnyx.com/v2/balance', {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} - ${await response.text()}`);
-    }
-
-    const data = await response.json() as any;
-    console.log(green(`✔ Telnyx: Connected. Balance: ${data.data.balance} ${data.data.currency}`));
-    console.log(green(`  Telnyx Connection ID: ${connectionId}`));
-    console.log(green(`  Telnyx Number: ${phone}\n`));
+    const client = new SDK.Client({ accessKeyId, endpoint });
+    await client.loginWithApiKey(apiKey, apiSecret);
+    const calls = new SDK.Calls(client);
+    await calls.listCalls({ pageSize: 1 });
+    console.log(green(`✔ Fonoster: Connected. Active Workspace ID: ${accessKeyId}`));
+    console.log(green(`  Endpoint: ${endpoint}\n`));
     return true;
   } catch (err: any) {
-    console.log(red(`✖ Telnyx Failed: ${err.message}\n`));
+    console.log(red(`✖ Fonoster Failed: ${err.message}\n`));
     return false;
   }
 }
@@ -146,19 +140,19 @@ async function testElevenLabs() {
 }
 
 async function runAll() {
-  const telnyxOk = await testTelnyx();
+  const fonosterOk = await testFonoster();
   const dgOk = await testDeepgram();
   const llmOk = await testLLM();
   const elOk = await testElevenLabs();
 
   console.log(blue('=== Diagnostic Summary ==='));
-  console.log(`Telnyx:      ${telnyxOk ? green('PASSED') : red('FAILED')}`);
+  console.log(`Fonoster:    ${fonosterOk ? green('PASSED') : red('FAILED')}`);
   console.log(`Deepgram:    ${dgOk ? green('PASSED') : red('FAILED')}`);
   console.log(`LLM Provider: ${llmOk ? green('PASSED') : red('FAILED')}`);
   console.log(`ElevenLabs:  ${elOk ? green('PASSED') : red('FAILED')}`);
   console.log();
 
-  if (telnyxOk && dgOk && llmOk && elOk) {
+  if (fonosterOk && dgOk && llmOk && elOk) {
     console.log(green('🚀 All systems are GO! You are ready to start placing outbound calls.'));
   } else {
     console.log(yellow('⚠ Some systems failed. Please review your credentials in the .env file.'));

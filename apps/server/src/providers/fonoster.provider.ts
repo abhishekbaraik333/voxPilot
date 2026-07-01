@@ -11,6 +11,7 @@ async function getClient() {
   clientInstance = new SDK.Client({
     accessKeyId: config.fonosterAccessKeyId,
     endpoint: config.fonosterEndpoint,
+    allowInsecure: true,
   });
 
   await clientInstance.loginWithApiKey(config.fonosterApiKey, config.fonosterApiSecret);

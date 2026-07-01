@@ -29,7 +29,7 @@ async function testFonoster() {
   }
 
   try {
-    const client = new SDK.Client({ accessKeyId, endpoint });
+    const client = new SDK.Client({ accessKeyId, endpoint, allowInsecure: true });
     await client.loginWithApiKey(apiKey, apiSecret);
     const calls = new SDK.Calls(client);
     await calls.listCalls({ pageSize: 1 });

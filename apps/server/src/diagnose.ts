@@ -28,6 +28,12 @@ async function testFonoster() {
     return false;
   }
 
+  // Debug: show what we're using (mask secrets)
+  console.log(`  Endpoint: ${endpoint}`);
+  console.log(`  AccessKeyId (workspace): ${accessKeyId}`);
+  console.log(`  API Key ID: ${apiKey}`);
+  console.log(`  API Secret: ${apiSecret.substring(0, 6)}...${apiSecret.substring(apiSecret.length - 4)}`);
+
   try {
     const client = new SDK.Client({ accessKeyId, endpoint, allowInsecure: true });
     await client.loginWithApiKey(apiKey, apiSecret);

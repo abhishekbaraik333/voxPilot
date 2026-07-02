@@ -37,6 +37,10 @@ async function main() {
   // 2. Set Access Key ID to Workspace Ref
   client.setAccessKeyId(workspaceRef);
 
+  // Re-authenticate to scope the session token to the workspace
+  console.log('Scoping session to Workspace...');
+  await client.login('admin@fonoster.local', 'changeme');
+
   // 3. Generate API Key
   console.log('Generating API Key for Workspace...');
   const apiKeysClient = new SDK.ApiKeys(client);

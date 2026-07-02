@@ -5,7 +5,7 @@ services:
     ports:
       - "3030:3030"
     environment:
-      - SERVER_DASHBOARD_SESSION_SECRET
+      SERVER_DASHBOARD_SESSION_SECRET: "supersecretsessionkeychangeinproduction"
 
   apiserver:
     image: fonoster/apiserver:0.17.1

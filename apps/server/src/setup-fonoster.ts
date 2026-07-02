@@ -79,7 +79,7 @@ async function main() {
     const appResult = await appsClient.createApplication({
       name: 'voxPilot',
       type: 'EXTERNAL' as any,
-      endpoint: 'http://server:3002'
+      endpoint: 'server:3002'
     });
     app = await appsClient.getApplication(appResult.ref);
   }

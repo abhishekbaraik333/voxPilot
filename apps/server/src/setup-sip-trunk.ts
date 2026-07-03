@@ -44,9 +44,10 @@ async function main() {
     credsRef = existingCreds.ref;
     console.log(`  Already exists: ${credsRef}`);
   } else {
+    console.log(`  Registering credentials with username: ${sipUsername.toLowerCase()}`);
     const credsResult = await credsClient.createCredentials({
       name: 'Cellhub SIP',
-      username: sipUsername,
+      username: sipUsername.toLowerCase(),
       password: sipPassword
     });
     credsRef = credsResult.ref;
@@ -73,7 +74,7 @@ async function main() {
         host: sipServer,
         port: 5060,
         transport: 'UDP' as any,
-        user: sipUsername,
+        user: sipUsername.toLowerCase(),
         weight: 1,
         priority: 1,
         enabled: true

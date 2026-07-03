@@ -2,7 +2,7 @@ import VoiceServer from '@fonoster/voice';
 import { createSession, removeSession } from '../services/call-orchestrator.js';
 import * as store from '../services/call-store.js';
 import { logger } from '../lib/logger.js';
-import { broadcastCallStatus } from '../ws/dashboard-ws.js';
+import { broadcastCallStatus, broadcastCallEnded } from '../ws/dashboard-ws.js';
 
 export function startVoiceServer(port: number) {
   logger.info({ port }, 'Starting Fonoster Voice Server');
@@ -39,6 +39,28 @@ export function startVoiceServer(port: number) {
       } catch (err) {
         logger.error({ err, callId }, 'Error executing response.hangup()');
       }
+    });
+
+    // Handle session end/error events from the voice connection
+    response.on('end', () => {
+      logger.info({ callId, callRef }, 'VoiceResponse session ended (call completed)');
+      store.updateCallStatus(callId, 'completed', {
+        endedAt: new Date().toISOString(),
+        duration: store.getCall(callId)?.startedAt
+          ? Math.round((Date.now() - new Date(store.getCall(callId)!.startedAt!).getTime()) / 1000)
+          : 0,
+      });
+      broadcastCallStatus(callId, 'completed');
+      broadcastCallEnded(callId);
+      removeSession(callId);
+    });
+
+    response.on('error', (err: any) => {
+      logger.error({ err, callId, callRef }, 'VoiceResponse session error');
+      store.updateCallStatus(callId, 'failed', { error: err.message });
+      broadcastCallStatus(callId, 'failed');
+      broadcastCallEnded(callId);
+      removeSession(callId);
     });
 
     // 5. Connect stream

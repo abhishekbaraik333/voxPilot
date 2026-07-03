@@ -33,50 +33,5 @@ export async function initiateOutboundCall(callId: string, toNumber: string): Pr
   const callRef = response.ref;
   logger.info({ callId, ref: callRef }, 'Fonoster call initiated successfully');
 
-  // Track the call status asynchronously
-  trackCallStatus(callRef, callId, response.statusStream).catch(err => {
-    logger.error({ err, callId }, 'Error tracking call status');
-  });
-
   return callRef;
-}
-
-async function trackCallStatus(callRef: string, callId: string, statusStream: any) {
-  const store = await import('../services/call-store.js');
-  const { broadcastCallStatus, broadcastCallEnded } = await import('../ws/dashboard-ws.js');
-  const { removeSession } = await import('../services/call-orchestrator.js');
-
-  try {
-    for await (const statusObj of statusStream) {
-      const status = statusObj.status; // e.g. ringing, answered, completed, failed, busy, no-answer
-      logger.info({ callId, callRef, status }, 'Fonoster call status update');
-
-      // Map Fonoster status to VoxPilot CallStatus
-      let mappedStatus = status.toLowerCase();
-      if (mappedStatus === 'answered') {
-        mappedStatus = 'in-progress';
-      }
-
-      const isTerminal = ['completed', 'failed', 'busy', 'no-answer', 'canceled'].includes(mappedStatus);
-
-      store.updateCallStatus(callId, mappedStatus, {
-        ...(mappedStatus === 'in-progress' && { answeredAt: new Date().toISOString() }),
-        ...(isTerminal && {
-          endedAt: new Date().toISOString(),
-          duration: store.getCall(callId)?.startedAt
-            ? Math.round((Date.now() - new Date(store.getCall(callId)!.startedAt!).getTime()) / 1000)
-            : 0
-        })
-      });
-
-      broadcastCallStatus(callId, mappedStatus);
-
-      if (isTerminal) {
-        broadcastCallEnded(callId);
-        removeSession(callId);
-      }
-    }
-  } catch (err) {
-    logger.error({ err, callId }, 'Error reading Fonoster status stream');
-  }
 }

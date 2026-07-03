@@ -30,9 +30,33 @@ export async function initiateOutboundCall(callId: string, toNumber: string): Pr
   const originalTrackCall = callsClient.trackCall;
   callsClient.trackCall = function(...args: any[]) {
     const stream = originalTrackCall.apply(this, args);
+    
+    // Intercept event listener registrations to wrap any error callbacks in a try/catch.
+    // This neutralizes the SDK's internal calls.js handler which throws a synchronous error
+    // inside the 'error' callback, which would otherwise crash the Node.js process.
+    const originalOn = stream.on;
+    const safeOn = function(this: any, event: string, listener: (...args: any[]) => void) {
+      if (event === 'error') {
+        const safeListener = function(...listenerArgs: any[]) {
+          try {
+            listener(...listenerArgs);
+          } catch (err: any) {
+            logger.debug({ err: err.message }, 'Caught and suppressed SDK trackCall stream error throw');
+          }
+        };
+        return originalOn.call(this, event, safeListener);
+      }
+      return originalOn.call(this, event, listener);
+    };
+    
+    stream.on = safeOn;
+    stream.addListener = safeOn;
+
+    // Attach our own default error listener to prevent uncaught exceptions if no other listener is active
     stream.on('error', (err: any) => {
       logger.debug({ err: err.message }, 'Suppressed trackCall stream error to prevent process crash');
     });
+
     return stream;
   };
   client.getCallsClient = () => callsClient;

@@ -7,7 +7,8 @@ import { broadcastCallStatus } from '../ws/dashboard-ws.js';
 export function startVoiceServer(port: number) {
   logger.info({ port }, 'Starting Fonoster Voice Server');
 
-  const voiceServer = new VoiceServer({ port });
+  const VoiceServerClass = (VoiceServer as any).default || VoiceServer;
+  const voiceServer = new VoiceServerClass({ port });
 
   voiceServer.listen(async (req: any, response: any) => {
     const callId = req.metadata?.callId || '';

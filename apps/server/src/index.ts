@@ -65,7 +65,7 @@ async function main() {
     const providers = [
       {
         name: 'Twilio',
-        status: config.twilioAccountSid ? 'connected' : 'unconfigured',
+        status: config.twilioAccountSid?.startsWith('AC') ? 'connected' : 'unconfigured',
         details: config.twilioPhoneNumber,
       },
       {

@@ -2,7 +2,17 @@ import twilio from 'twilio';
 import { config } from '../config.js';
 import { logger } from '../lib/logger.js';
 
-const client = twilio(config.twilioAccountSid, config.twilioAuthToken);
+let client: twilio.Twilio | null = null;
+
+function getClient(): twilio.Twilio {
+  if (!client) {
+    if (!config.twilioAccountSid || !config.twilioAccountSid.startsWith('AC')) {
+      throw new Error('TWILIO_ACCOUNT_SID must start with "AC". Please update your .env file with your Twilio Account SID.');
+    }
+    client = twilio(config.twilioAccountSid, config.twilioAuthToken);
+  }
+  return client;
+}
 
 /**
  * Initiate an outbound call via Twilio.
@@ -12,15 +22,14 @@ const client = twilio(config.twilioAccountSid, config.twilioAuthToken);
 export async function initiateOutboundCall(callId: string, toNumber: string): Promise<string> {
   logger.info({ callId, to: toNumber, from: config.twilioPhoneNumber }, 'Creating Twilio call');
 
-  const call = await client.calls.create({
+  const twilioClient = getClient();
+  const call = await twilioClient.calls.create({
     to: toNumber,
     from: config.twilioPhoneNumber,
     url: `${config.twilioWebhookBaseUrl}/webhooks/twilio/voice`,
     statusCallback: `${config.twilioWebhookBaseUrl}/webhooks/twilio/status`,
     statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
     statusCallbackMethod: 'POST',
-    // Record the call if enabled
-    // record: config.enableRecording,
   });
 
   logger.info({ callId, sid: call.sid }, 'Twilio call created');
@@ -31,6 +40,7 @@ export async function initiateOutboundCall(callId: string, toNumber: string): Pr
  * End an active call via Twilio.
  */
 export async function endCall(callSid: string): Promise<void> {
-  await client.calls(callSid).update({ status: 'completed' });
+  const twilioClient = getClient();
+  await twilioClient.calls(callSid).update({ status: 'completed' });
   logger.info({ sid: callSid }, 'Twilio call ended');
 }

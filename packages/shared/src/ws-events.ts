@@ -22,7 +22,7 @@ export const WS_EVENTS = {
 
 // ─── WebSocket Payload Types ─────────────────────────────────
 
-import type { CallStatus, TranscriptEntry, CallEvent, ProviderInfo } from './types';
+import type { CallStatus, TranscriptEntry, CallEvent, ProviderInfo } from './types.js';
 
 export interface WsCallStatusPayload {
   callId: string;

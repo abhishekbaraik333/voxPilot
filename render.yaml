@@ -6,7 +6,7 @@ services:
     name: voxpilot-server
     runtime: node
     plan: starter # Starter plan or higher is recommended for uninterrupted WebSockets & Twilio streams
-    buildCommand: pnpm install && pnpm --filter @voxpilot/server build
+    buildCommand: pnpm install && pnpm build
     startCommand: node apps/server/dist/index.js
     healthCheckPath: /health
     envVars:

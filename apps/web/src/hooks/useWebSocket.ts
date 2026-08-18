@@ -6,8 +6,11 @@ import { useCallStore } from '@/stores/call.store';
 import { WS_EVENTS } from '@voxpilot/shared';
 
 const getWsUrl = () => {
+  if (process.env.NEXT_PUBLIC_WS_URL) {
+    return process.env.NEXT_PUBLIC_WS_URL.replace(/\/$/, '');
+  }
   if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
+    return 'ws://localhost:3001';
   }
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   // If local development on port 3000, talk directly to backend on 3001

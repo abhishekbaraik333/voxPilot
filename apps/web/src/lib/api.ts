@@ -1,6 +1,9 @@
 const getApiUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
+  }
   if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    return 'http://localhost:3001';
   }
   // If local development on port 3000, talk directly to backend on 3001
   if (window.location.port === '3000') {

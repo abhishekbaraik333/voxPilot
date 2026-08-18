@@ -18,7 +18,7 @@ async function main() {
 
   // ─── Plugins ────────────────────────────────────────────────
   await app.register(cors, {
-    origin: [config.dashboardUrl, 'http://localhost:3000'],
+    origin: true,
     credentials: true,
   });
 

@@ -34,7 +34,7 @@ export const config = {
   twilioAccountSid: requireEnv('TWILIO_ACCOUNT_SID'),
   twilioAuthToken: requireEnv('TWILIO_AUTH_TOKEN'),
   twilioPhoneNumber: requireEnv('TWILIO_PHONE_NUMBER'),
-  twilioWebhookBaseUrl: optionalEnv('TWILIO_WEBHOOK_BASE_URL', 'http://localhost:3001'),
+  twilioWebhookBaseUrl: optionalEnv('TWILIO_WEBHOOK_BASE_URL', 'http://localhost:3001').replace(/\/+$/, ''),
 
   // Deepgram
   deepgramApiKey: requireEnv('DEEPGRAM_API_KEY'),

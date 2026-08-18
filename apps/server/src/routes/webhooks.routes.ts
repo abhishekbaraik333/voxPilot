@@ -6,15 +6,15 @@ import { broadcastCallStatus } from '../ws/dashboard-ws.js';
 
 export async function webhookRoutes(app: FastifyInstance) {
   /**
-   * POST /webhooks/twilio/voice
+   * /webhooks/twilio/voice (POST or GET)
    * Twilio requests this when the outbound call is answered.
    * We return TwiML that connects the call to our media WebSocket stream.
    */
-  app.post('/webhooks/twilio/voice', async (request, reply) => {
-    const body = request.body as Record<string, string>;
-    const callSid = body.CallSid;
+  const handleVoiceWebhook = async (request: any, reply: any) => {
+    const body = ((request.body || request.query || {}) as Record<string, string>);
+    const callSid = body.CallSid || '';
 
-    logger.info({ callSid }, 'Twilio voice webhook — call answered');
+    logger.info({ callSid, body }, 'Twilio voice webhook — call answered');
 
     // Find our call record by the Twilio SID
     const call = store.getCallBySid(callSid);
@@ -29,6 +29,8 @@ export async function webhookRoutes(app: FastifyInstance) {
     const wsUrl = config.twilioWebhookBaseUrl.replace(/^http/, 'ws');
     const streamUrl = `${wsUrl}/ws/twilio-stream`;
 
+    logger.info({ streamUrl, callId: call?.id }, 'Connecting Twilio Stream');
+
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
@@ -36,11 +38,15 @@ export async function webhookRoutes(app: FastifyInstance) {
       <Parameter name="callId" value="${call?.id || ''}" />
     </Stream>
   </Connect>
+  <Pause length="3600"/>
 </Response>`;
 
     reply.header('Content-Type', 'text/xml');
     return reply.send(twiml);
-  });
+  };
+
+  app.post('/webhooks/twilio/voice', handleVoiceWebhook);
+  app.get('/webhooks/twilio/voice', handleVoiceWebhook);
 
   /**
    * POST /webhooks/twilio/status

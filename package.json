@@ -11,6 +11,10 @@
     "dev:web": "pnpm --filter @voxpilot/web dev",
     "dev:all": "turbo dev --parallel"
   },
+  "dependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  },
   "devDependencies": {
     "turbo": "^2.3.0",
     "typescript": "^5.7.0"

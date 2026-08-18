@@ -28,8 +28,6 @@ export async function initiateOutboundCall(callId: string, toNumber: string): Pr
     from: config.twilioPhoneNumber,
     url: `${config.twilioWebhookBaseUrl}/webhooks/twilio/voice`,
     statusCallback: `${config.twilioWebhookBaseUrl}/webhooks/twilio/status`,
-    statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
-    statusCallbackMethod: 'POST',
   });
 
   logger.info({ callId, sid: call.sid }, 'Twilio call created');

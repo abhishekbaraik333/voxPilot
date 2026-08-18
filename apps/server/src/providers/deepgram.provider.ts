@@ -31,8 +31,8 @@ export function createDeepgramStream(): {
     interim_results: true,
     utterance_end_ms: 1000,
     vad_events: true,
-    encoding: 'linear16',
-    sample_rate: 16000,
+    encoding: 'mulaw',
+    sample_rate: 8000,
     channels: 1,
   });
 

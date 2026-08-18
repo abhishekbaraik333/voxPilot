@@ -4,7 +4,7 @@ import { config } from '../config.js';
 import { toE164 } from '../lib/utils.js';
 import { logger } from '../lib/logger.js';
 import * as store from '../services/call-store.js';
-import { initiateOutboundCall } from '../providers/fonoster.provider.js';
+import { initiateOutboundCall } from '../providers/twilio.provider.js';
 import { broadcastCallStatus } from '../ws/dashboard-ws.js';
 
 export async function callRoutes(app: FastifyInstance) {
@@ -41,7 +41,7 @@ export async function callRoutes(app: FastifyInstance) {
     // Create call record in memory
     const call = store.createCallRecord({
       toNumber: formattedNumber,
-      fromNumber: config.cellhubCallerId,
+      fromNumber: config.twilioPhoneNumber,
       prompt,
       voiceId: voiceId || config.elevenlabsVoiceId,
       llmModel: llmModel || config.defaultLlmModel,
@@ -116,11 +116,11 @@ export async function callRoutes(app: FastifyInstance) {
     }
 
     try {
-      // End via Fonoster session
-      const { getSession } = await import('../services/call-orchestrator.js');
-      const session = getSession(id);
-      if (session) {
-        await session.hangup();
+      // End via Twilio
+      if (call.twilioCallSid) {
+        const twilio = (await import('twilio')).default;
+        const client = twilio(config.twilioAccountSid, config.twilioAuthToken);
+        await client.calls(call.twilioCallSid).update({ status: 'completed' });
       }
 
       store.updateCallStatus(id, 'completed', {

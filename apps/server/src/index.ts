@@ -7,8 +7,9 @@ import { logger } from './lib/logger.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { callRoutes } from './routes/calls.routes.js';
 import { promptRoutes } from './routes/prompts.routes.js';
+import { webhookRoutes } from './routes/webhooks.routes.js';
 import { registerDashboardWs } from './ws/dashboard-ws.js';
-import { startVoiceServer } from './voice-app/server.js';
+import { registerTwilioStreamWs } from './ws/twilio-stream.js';
 
 async function main() {
   const app = Fastify({
@@ -46,11 +47,11 @@ async function main() {
   await app.register(authRoutes);
   await app.register(callRoutes);
   await app.register(promptRoutes);
+  await app.register(webhookRoutes);
+
   // ─── WebSocket Endpoints ────────────────────────────────────
   await app.register(registerDashboardWs);
-
-  // Start Fonoster Voice Server
-  startVoiceServer(config.fonosterVoicePort);
+  await app.register(registerTwilioStreamWs);
 
   // ─── Health Check ───────────────────────────────────────────
   app.get('/health', async () => ({
@@ -63,14 +64,9 @@ async function main() {
   app.get('/api/settings/status', async () => {
     const providers = [
       {
-        name: 'Fonoster',
-        status: config.fonosterAccessKeyId ? 'connected' : 'unconfigured',
-        details: `Endpoint: ${config.fonosterEndpoint}`,
-      },
-      {
-        name: 'Cellhub (SIP)',
-        status: config.cellhubCallerId ? 'connected' : 'unconfigured',
-        details: `Caller ID: ${config.cellhubCallerId}`,
+        name: 'Twilio',
+        status: config.twilioAccountSid ? 'connected' : 'unconfigured',
+        details: config.twilioPhoneNumber,
       },
       {
         name: 'Deepgram',
@@ -109,7 +105,7 @@ async function main() {
 ╠══════════════════════════════════════════════════════╣
 ║  API:        http://${config.host}:${config.port}              ║
 ║  Dashboard:  ${config.dashboardUrl.padEnd(38)}║
-║  Voice Port: ${String(config.fonosterVoicePort).padEnd(38)}║
+║  Webhooks:   ${config.twilioWebhookBaseUrl.padEnd(38)}║
 ║  LLM:        ${config.defaultLlmModel.padEnd(38)}║
 ║  Mode:       ${config.nodeEnv.padEnd(38)}║
 ╚══════════════════════════════════════════════════════╝

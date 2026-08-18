@@ -8,7 +8,7 @@ import { logger } from '../lib/logger.js';
  * Sends text chunks, receives audio chunks.
  *
  * Uses the ElevenLabs WebSocket streaming API for lowest latency.
- * Output format: pcm_16000 to match Fonoster's expected format.
+ * Output format: mulaw_8000 to match Twilio's expected format.
  */
 export function createElevenLabsStream(voiceId?: string): {
   events: EventEmitter;
@@ -20,7 +20,7 @@ export function createElevenLabsStream(voiceId?: string): {
   const voice = voiceId || config.elevenlabsVoiceId;
   const model = config.elevenlabsModelId;
 
-  const wsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voice}/stream-input?model_id=${model}&output_format=pcm_16000`;
+  const wsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voice}/stream-input?model_id=${model}&output_format=ulaw_8000`;
 
   let ws: WebSocket | null = null;
   let isOpen = false;

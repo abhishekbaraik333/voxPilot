@@ -21,8 +21,7 @@
     "openai": "^4.77.0",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
-    "@fonoster/sdk": "^0.22.0",
-    "@fonoster/voice": "^0.22.0",
+    "twilio": "^5.4.0",
     "ws": "^8.18.0",
     "nanoid": "^5.0.0",
     "@voxpilot/shared": "workspace:*"

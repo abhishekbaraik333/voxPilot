@@ -2,7 +2,7 @@
 import dotenv from 'dotenv';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import SDK from '@fonoster/sdk';
+import twilio from 'twilio';
 import { createClient } from '@deepgram/sdk';
 import OpenAI from 'openai';
 
@@ -16,34 +16,25 @@ const blue = (text: string) => `\x1b[34m${text}\x1b[0m`;
 
 console.log(blue('\n=== VoxPilot System Diagnostics ===\n'));
 
-async function testFonoster() {
-  console.log('Testing Fonoster Connection...');
-  const endpoint = process.env.FONOSTER_API_ENDPOINT || 'localhost:50051';
-  const accessKeyId = process.env.FONOSTER_ACCESS_KEY_ID;
-  const apiKey = process.env.FONOSTER_API_KEY;
-  const apiSecret = process.env.FONOSTER_API_SECRET;
+async function testTwilio() {
+  console.log('Testing Twilio Connection...');
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  const phone = process.env.TWILIO_PHONE_NUMBER;
 
-  if (!accessKeyId || !apiKey || !apiSecret) {
-    console.log(red('✖ Fonoster: Configuration missing in .env\n'));
+  if (!sid || !token || !phone) {
+    console.log(red('✖ Twilio: Configuration missing in .env\n'));
     return false;
   }
 
-  // Debug: show what we're using (mask secrets)
-  console.log(`  Endpoint: ${endpoint}`);
-  console.log(`  AccessKeyId (workspace): ${accessKeyId}`);
-  console.log(`  API Key ID: ${apiKey}`);
-  console.log(`  API Secret: ${apiSecret.substring(0, 6)}...${apiSecret.substring(apiSecret.length - 4)}`);
-
   try {
-    const client = new SDK.Client({ accessKeyId, endpoint, allowInsecure: true });
-    await client.loginWithApiKey(apiKey, apiSecret);
-    const calls = new SDK.Calls(client);
-    await calls.listCalls({ pageSize: 1 });
-    console.log(green(`✔ Fonoster: Connected. Active Workspace ID: ${accessKeyId}`));
-    console.log(green(`  Endpoint: ${endpoint}\n`));
+    const client = twilio(sid, token);
+    const account = await client.api.v2010.accounts(sid).fetch();
+    console.log(green(`✔ Twilio: Connected. Account Name: "${account.friendlyName}", Status: ${account.status}`));
+    console.log(green(`  Twilio Number: ${phone}\n`));
     return true;
   } catch (err: any) {
-    console.log(red(`✖ Fonoster Failed: ${err.message}\n`));
+    console.log(red(`✖ Twilio Failed: ${err.message}\n`));
     return false;
   }
 }
@@ -146,19 +137,19 @@ async function testElevenLabs() {
 }
 
 async function runAll() {
-  const fonosterOk = await testFonoster();
+  const twilioOk = await testTwilio();
   const dgOk = await testDeepgram();
   const llmOk = await testLLM();
   const elOk = await testElevenLabs();
 
   console.log(blue('=== Diagnostic Summary ==='));
-  console.log(`Fonoster:    ${fonosterOk ? green('PASSED') : red('FAILED')}`);
+  console.log(`Twilio:      ${twilioOk ? green('PASSED') : red('FAILED')}`);
   console.log(`Deepgram:    ${dgOk ? green('PASSED') : red('FAILED')}`);
   console.log(`LLM Provider: ${llmOk ? green('PASSED') : red('FAILED')}`);
   console.log(`ElevenLabs:  ${elOk ? green('PASSED') : red('FAILED')}`);
   console.log();
 
-  if (fonosterOk && dgOk && llmOk && elOk) {
+  if (twilioOk && dgOk && llmOk && elOk) {
     console.log(green('🚀 All systems are GO! You are ready to start placing outbound calls.'));
   } else {
     console.log(yellow('⚠ Some systems failed. Please review your credentials in the .env file.'));

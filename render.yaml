@@ -33,7 +33,7 @@ services:
       - key: ELEVENLABS_API_KEY
         sync: false
       - key: ELEVENLABS_VOICE_ID
-        value: 21m00Tcm4TlvDq8ikWAM
+        value: 6aDn1KB0hjpdcocrUkmq
       - key: ELEVENLABS_MODEL_ID
         value: eleven_turbo_v2_5
       - key: OPENROUTER_API_KEY

@@ -41,7 +41,7 @@ export const config = {
 
   // ElevenLabs
   elevenlabsApiKey: requireEnv('ELEVENLABS_API_KEY'),
-  elevenlabsVoiceId: optionalEnv('ELEVENLABS_VOICE_ID', '21m00Tcm4TlvDq8ikWAM'), // Rachel
+  elevenlabsVoiceId: optionalEnv('ELEVENLABS_VOICE_ID', '6aDn1KB0hjpdcocrUkmq'),
   elevenlabsModelId: optionalEnv('ELEVENLABS_MODEL_ID', 'eleven_turbo_v2_5'),
 
   // LLM

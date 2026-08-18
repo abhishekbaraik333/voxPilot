@@ -1,5 +1,5 @@
-import type { FastifyInstance } from 'fastify';
-import type WebSocket from 'ws';
+import { WebSocket } from 'ws';
+import type { IncomingMessage } from 'http';
 import type { CallStatus, TranscriptEntry, CallEvent } from '@voxpilot/shared';
 import { WS_EVENTS } from '@voxpilot/shared';
 import { logger } from '../lib/logger.js';
@@ -8,33 +8,30 @@ import { logger } from '../lib/logger.js';
 const clients = new Set<WebSocket>();
 
 /**
- * Register the dashboard WebSocket endpoint.
+ * Handle incoming dashboard WebSocket connections.
  * Dashboard clients connect here to receive real-time call events.
  */
-export async function registerDashboardWs(app: FastifyInstance) {
-  app.get('/ws/dashboard', { websocket: true }, (socket, _req) => {
-    logger.info('Dashboard client connected');
-    clients.add(socket);
+export function handleDashboardWsConnection(socket: WebSocket, _req: IncomingMessage) {
+  logger.info('Dashboard client connected');
+  clients.add(socket);
 
-    socket.on('message', (data) => {
-      try {
-        const msg = JSON.parse(data.toString());
-        logger.debug({ event: msg.event }, 'Dashboard WS message received');
-        // Handle subscribe/unsubscribe if needed in the future
-      } catch {
-        // Ignore invalid messages
-      }
-    });
+  socket.on('message', (data) => {
+    try {
+      const msg = JSON.parse(data.toString());
+      logger.debug({ event: msg.event }, 'Dashboard WS message received');
+    } catch {
+      // Ignore invalid messages
+    }
+  });
 
-    socket.on('close', () => {
-      clients.delete(socket);
-      logger.info('Dashboard client disconnected');
-    });
+  socket.on('close', () => {
+    clients.delete(socket);
+    logger.info('Dashboard client disconnected');
+  });
 
-    socket.on('error', (err) => {
-      logger.error({ err }, 'Dashboard WS error');
-      clients.delete(socket);
-    });
+  socket.on('error', (err) => {
+    logger.error({ err }, 'Dashboard WS error');
+    clients.delete(socket);
   });
 }
 
@@ -48,8 +45,7 @@ function broadcast(event: string, data: unknown) {
 
   for (const client of clients) {
     try {
-      if (client.readyState === 1) {
-        // WebSocket.OPEN
+      if (client.readyState === WebSocket.OPEN) {
         client.send(message);
       }
     } catch (err) {

@@ -1,15 +1,15 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
-import websocket from '@fastify/websocket';
+import { WebSocketServer } from 'ws';
 import { config } from './config.js';
 import { logger } from './lib/logger.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { callRoutes } from './routes/calls.routes.js';
 import { promptRoutes } from './routes/prompts.routes.js';
 import { webhookRoutes } from './routes/webhooks.routes.js';
-import { registerDashboardWs } from './ws/dashboard-ws.js';
-import { registerTwilioStreamWs } from './ws/twilio-stream.js';
+import { handleDashboardWsConnection } from './ws/dashboard-ws.js';
+import { handleTwilioStreamConnection } from './ws/twilio-stream.js';
 
 async function main() {
   const app = Fastify({
@@ -41,17 +41,11 @@ async function main() {
     }
   );
 
-  await app.register(websocket);
-
   // ─── Routes ─────────────────────────────────────────────────
   await app.register(authRoutes);
   await app.register(callRoutes);
   await app.register(promptRoutes);
   await app.register(webhookRoutes);
-
-  // ─── WebSocket Endpoints ────────────────────────────────────
-  await app.register(registerDashboardWs);
-  await app.register(registerTwilioStreamWs);
 
   // ─── Health Check ───────────────────────────────────────────
   app.get('/health', async () => ({
@@ -94,6 +88,35 @@ async function main() {
       success: false,
       error: config.isDev ? error.message : 'Internal server error',
     });
+  });
+
+  // ─── WebSocket Upgrade Handling (Native ws Server) ──────────
+  const twilioWss = new WebSocketServer({ noServer: true });
+  twilioWss.on('connection', (ws, req) => {
+    handleTwilioStreamConnection(ws, req);
+  });
+
+  const dashboardWss = new WebSocketServer({ noServer: true });
+  dashboardWss.on('connection', (ws, req) => {
+    handleDashboardWsConnection(ws, req);
+  });
+
+  app.server.on('upgrade', (request, socket, head) => {
+    const pathname = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`).pathname;
+    logger.info({ pathname, url: request.url }, 'Incoming WebSocket upgrade request');
+
+    if (pathname === '/ws/twilio-stream' || pathname.startsWith('/ws/twilio-stream')) {
+      twilioWss.handleUpgrade(request, socket, head, (ws) => {
+        twilioWss.emit('connection', ws, request);
+      });
+    } else if (pathname === '/ws/dashboard' || pathname.startsWith('/ws/dashboard')) {
+      dashboardWss.handleUpgrade(request, socket, head, (ws) => {
+        dashboardWss.emit('connection', ws, request);
+      });
+    } else {
+      logger.warn({ pathname }, 'Unrecognized WebSocket path — closing connection');
+      socket.destroy();
+    }
   });
 
   // ─── Start Server ──────────────────────────────────────────

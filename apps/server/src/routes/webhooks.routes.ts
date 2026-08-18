@@ -28,7 +28,7 @@ export async function webhookRoutes(app: FastifyInstance) {
     // Return TwiML to connect the call to our WebSocket for bidirectional audio
     const wsHost = request.headers['x-forwarded-host'] || request.headers.host || config.twilioWebhookBaseUrl.replace(/^https?:\/\//, '');
     const wsUrl = `wss://${wsHost}`;
-    const streamUrl = `${wsUrl}/ws/twilio-stream?callId=${encodeURIComponent(call?.id || '')}`;
+    const streamUrl = `${wsUrl}/ws/twilio-stream`;
 
     logger.info({ streamUrl, callId: call?.id }, 'Connecting Twilio Stream');
 

@@ -26,15 +26,17 @@ export async function webhookRoutes(app: FastifyInstance) {
     }
 
     // Return TwiML to connect the call to our WebSocket for bidirectional audio
-    const wsUrl = config.twilioWebhookBaseUrl.replace(/^http/, 'ws');
-    const streamUrl = `${wsUrl}/ws/twilio-stream`;
+    const wsHost = request.headers['x-forwarded-host'] || request.headers.host || config.twilioWebhookBaseUrl.replace(/^https?:\/\//, '');
+    const wsUrl = `wss://${wsHost}`;
+    const streamUrl = `${wsUrl}/ws/twilio-stream?callId=${encodeURIComponent(call?.id || '')}`;
 
     logger.info({ streamUrl, callId: call?.id }, 'Connecting Twilio Stream');
 
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
+  <Say voice="Polly.Joanna-Neural">Connecting to Vox Pilot.</Say>
   <Connect>
-    <Stream url="${streamUrl}">
+    <Stream name="voxpilot_stream" url="${streamUrl}">
       <Parameter name="callId" value="${call?.id || ''}" />
     </Stream>
   </Connect>
@@ -52,8 +54,8 @@ export async function webhookRoutes(app: FastifyInstance) {
    * POST /webhooks/twilio/status
    * Twilio sends call status updates here.
    */
-  app.post('/webhooks/twilio/status', async (request, reply) => {
-    const body = request.body as Record<string, string>;
+  const handleStatusWebhook = async (request: any, reply: any) => {
+    const body = ((request.body || request.query || {}) as Record<string, string>);
     const callSid = body.CallSid;
     const callStatus = body.CallStatus;
     const duration = body.CallDuration;
@@ -91,5 +93,8 @@ export async function webhookRoutes(app: FastifyInstance) {
     broadcastCallStatus(call.id, mappedStatus);
 
     return reply.send({ success: true });
-  });
+  };
+
+  app.post('/webhooks/twilio/status', handleStatusWebhook);
+  app.get('/webhooks/twilio/status', handleStatusWebhook);
 }

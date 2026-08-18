@@ -10,15 +10,20 @@ import { broadcastCallStatus, broadcastCallEnded } from './dashboard-ws.js';
  * Handles bidirectional audio: receives caller audio, sends agent audio back.
  */
 export async function registerTwilioStreamWs(app: FastifyInstance) {
-  app.get('/ws/twilio-stream', { websocket: true }, (socket, _req) => {
-    let callId = '';
+  app.get('/ws/twilio-stream', { websocket: true }, (socket, req) => {
+    const ws: any = (socket as any).socket || socket;
+
+    // Parse callId from query params as fallback
+    const urlObj = new URL(req.url, 'http://localhost');
+    let callId = urlObj.searchParams.get('callId') || '';
     let streamSid = '';
 
-    logger.info('Twilio media stream connected');
+    logger.info({ callId, url: req.url }, 'Twilio media stream WebSocket connected');
 
-    socket.on('message', async (data) => {
+    ws.on('message', async (data: any) => {
       try {
         const msg = JSON.parse(data.toString());
+        logger.debug({ event: msg.event, callId }, 'Twilio stream event received');
 
         switch (msg.event) {
           case 'connected':
@@ -27,7 +32,9 @@ export async function registerTwilioStreamWs(app: FastifyInstance) {
 
           case 'start': {
             streamSid = msg.start.streamSid;
-            callId = msg.start.customParameters?.callId || '';
+            if (msg.start.customParameters?.callId) {
+              callId = msg.start.customParameters.callId;
+            }
 
             logger.info(
               { streamSid, callId, tracks: msg.start.tracks },
@@ -47,8 +54,8 @@ export async function registerTwilioStreamWs(app: FastifyInstance) {
               const session = createSession(callId, streamSid);
               session.setTwilioSender((payload) => {
                 try {
-                  if (socket.readyState === 1) {
-                    socket.send(payload);
+                  if (ws.readyState === 1) {
+                    ws.send(payload);
                   }
                 } catch (err) {
                   logger.error({ err }, 'Error sending audio to Twilio');
@@ -90,7 +97,6 @@ export async function registerTwilioStreamWs(app: FastifyInstance) {
           }
 
           default:
-            // dtmf, mark, etc. — log but don't process
             logger.debug({ event: msg.event, callId }, 'Twilio stream: unhandled event');
         }
       } catch (err) {
@@ -98,14 +104,14 @@ export async function registerTwilioStreamWs(app: FastifyInstance) {
       }
     });
 
-    socket.on('close', () => {
-      logger.info({ callId, streamSid }, 'Twilio media stream disconnected');
+    ws.on('close', (code: number, reason: any) => {
+      logger.info({ callId, streamSid, code, reason: reason?.toString() }, 'Twilio media stream disconnected');
       if (callId) {
         removeSession(callId);
       }
     });
 
-    socket.on('error', (err) => {
+    ws.on('error', (err: any) => {
       logger.error({ err, callId }, 'Twilio stream WS error');
     });
   });
